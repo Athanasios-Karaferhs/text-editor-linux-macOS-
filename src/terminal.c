@@ -7,43 +7,71 @@
 #define DOWN_ARROW_KEY 1001
 #define RIGHT_ARROW_KEY 1002
 #define LEFT_ARROW_KEY 1003
+#include <sys/ioctl.h> //για να μετραμε ποσα rows/col εχει το terminal
 
 void enable_raw_mode(void);
 int read_key(void); // gt to read_key einai xamhla
+int get_window_size(int *, int *);
+void refresh_screen(void);
 
 int main()
 {
+    int rows, cols;
+
     enable_raw_mode();
-    int c; // int γτ εχει values πανω του 1000
-    while ((c = read_key()) != 'q')
+
+    //  refresh_screen();
+    //  get_window_size(&rows, &cols);
+    // printf("rows: %d, cols: %d\r\n", rows, cols);
+
+    int c;
+    /*while (1)
     {
-        if (c == UPPER_ARROW_KEY)
+        get_window_size(&rows, &cols);
+        refresh_screen();
+        if (get_window_size(&rows, &cols) == -1)
         {
-            printf("UP\r\n");
+            perror("get_window_size failed");
+            exit(EXIT_FAILURE);
         }
-        else if (c == DOWN_ARROW_KEY)
-        {
-            printf("DOWN\r\n");
-        }
-        else if (c == RIGHT_ARROW_KEY)
-        {
-            printf("RIGHT\r\n");
-        }
-        else if (c == LEFT_ARROW_KEY)
-        {
-            printf("LEFT\r\n");
-        }
-        else if (iscntrl(c))
-        {
-            printf("%d\r\n", c);
-        }
+        if (c = read_key() == 'i')
+            break;
+    }
+    SOS:με καποιον μαγικο τροπο πρεπει να κραταω τισ αλλαγιες στα rows,cols.*/
+    while (1)
+    {
+        c = read_key();
+        if (c == 'q')
+            break;
         else
         {
-            printf("%d ('%c')\r\n", c, c);
+            if (c == UPPER_ARROW_KEY)
+            {
+                printf("UP\r\n");
+            }
+            else if (c == DOWN_ARROW_KEY)
+            {
+                printf("DOWN\r\n");
+            }
+            else if (c == RIGHT_ARROW_KEY)
+            {
+                printf("RIGHT\r\n");
+            }
+            else if (c == LEFT_ARROW_KEY)
+            {
+                printf("LEFT\r\n");
+            }
+            else if (iscntrl(c))
+            {
+                printf("%d\r\n", c);
+            }
+            else
+            {
+                printf("%d ('%c')\r\n", c, c); /*%d εκτυποντει το αριθμητικο value ενω το %c τον αριθμω του χαρακτηρα σε ASCII*/
+            }
         }
     }
 }
-
 // Global variable to store original settings so atexit can access it
 struct termios orig_termios;
 
@@ -87,7 +115,7 @@ void enable_raw_mode()
     }
 }
 
-int read_key(void)
+int read_key()
 {
     char c;
     int n;
@@ -126,4 +154,26 @@ int read_key(void)
     }
 
     return 27;
+}
+
+int get_window_size(int *rows, int *cols) /*περνα τα ως Pointer για να γραφεις πανω σε 2 στοιχεια */
+{
+    struct winsize ws;
+
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0)
+        return -1;
+    *cols = ws.ws_col;
+    *rows = ws.ws_row;
+
+    for (int i = 0; i < ws.ws_row; i++)
+    {
+        printf("~ \r\n");
+    }
+    return 0;
+}
+
+void refresh_screen()
+{
+    write(STDOUT_FILENO, "\x1b[2J", 4); // clear
+    write(STDOUT_FILENO, "\x1b[H", 3);  // τραβα στο 1,1
 }
