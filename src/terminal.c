@@ -20,7 +20,7 @@ void enable_raw_mode(void);
 int read_key(void); // gt to read_key einai xamhla
 int get_window_size(int *, int *);
 void refresh_screen(int, int, int);
-void handle_sigwinch(int); // <-- CHANGED
+void handle_sigwinch(int);
 
 // Global variable to store original settings so atexit can access it
 struct termios orig_termios;
