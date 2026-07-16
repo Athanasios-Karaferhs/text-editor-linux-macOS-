@@ -15,6 +15,7 @@
 αντι c == 17 (ctrl+q)*/
 #include <sys/ioctl.h>           //για να μετραμε ποσα rows/col εχει το terminal
 #include <errno.h>               //resize
+#include "editor.h"
 
 void enable_raw_mode(void);
 int read_key(void); // gt to read_key einai xamhla
@@ -33,14 +34,21 @@ void handle_sigwinch(int sig)
     window_resized = 1;
 }
 
-int main()
+int main(int argc, char *argv[]) /*argc= παιρνει αριθμο απο arguments ενω το argv εκτυπωνει το αλφαριθμιτικο*/
 {
+    if (argc < 2)
+    {
+        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+    ed_open(argv[1]);
+
     int rows, cols;
     int c;
     int key_pressed = 0;
 
     int cx = 0, cy = 0;
-
+    ed_open("text.txt");
     enable_raw_mode();
 
     // όταν αλλάζει το μέγεθος του terminal στέλνει SIGWINCH
