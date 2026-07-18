@@ -11,16 +11,17 @@
 #define DOWN_ARROW_KEY 1001
 #define RIGHT_ARROW_KEY 1002
 #define LEFT_ARROW_KEY 1003
-#define CTRL_KEY(k) ((k) & 0x1f) /*κανουμε ενα bitwise and (αχ κυριε δημητριου). AND με το q και το 0x1f δινει 17 κ μετα παει κ ελεγχει \
+#define ENTER_KEY 13
+#define CTRL_KEY(k) ((k) & 0x1f) /*κανουμε ενα bitwise and (αχ κυριε δημητριου :>). AND με το q και το 0x1f δινει 17 κ μετα παει κ ελεγχει \
 αντι c == 17 (ctrl+q)*/
-#include <sys/ioctl.h>           //για να μετραμε ποσα rows/col εχει το terminal
+#include <sys/ioctl.h>           //για να μετραμε ποσα trows/col εχει το terminal
 #include <errno.h>               //resize
 #include "editor.h"
 
 void enable_raw_mode(void);
 int read_key(void); // gt to read_key einai xamhla
 int get_window_size(int *, int *);
-void refresh_screen(int, int, int);
+void refresh_screen(int, int, int, int, int);
 void handle_sigwinch(int);
 
 // Global variable to store original settings so atexit can access it
@@ -34,7 +35,8 @@ void handle_sigwinch(int sig)
     window_resized = 1;
 }
 
-int main(int argc, char *argv[]) /*argc= παιρνει αριθμο απο arguments ενω το argv εκτυπωνει το αλφαριθμιτικο*/
+int main(int argc, char *argv[]) /*argc= παιρνει αριθμο απο arguments π.χ. ./terminal text.txt =2 και βαζει τις εντολες στο argv που ειναι πινακας απο
+char*/
 {
     if (argc < 2)
     {
@@ -43,15 +45,14 @@ int main(int argc, char *argv[]) /*argc= παιρνει αριθμο απο argu
     }
     ed_open(argv[1]);
 
-    int rows, cols;
+    int trows, cols;
     int c;
     int key_pressed = 0;
-
-    int cx = 0, cy = 0;
-    ed_open("text.txt");
+    int cy = num_rows - 1;
+    int cx = rows[cy].len;
     enable_raw_mode();
 
-    // όταν αλλάζει το μέγεθος του terminal στέλνει SIGWINCH
+    // όταν αλλάζει το μέγεθος του terminal στέλνει SIGWINCH, thanks to that random ahh guy on stackoverflow
     struct sigaction sa;
     sa.sa_handler = handle_sigwinch;
     sigemptyset(&sa.sa_mask);
@@ -64,10 +65,10 @@ int main(int argc, char *argv[]) /*argc= παιρνει αριθμο απο argu
         if (window_resized)
         {
             window_resized = 0;
-            get_window_size(&rows, &cols);
+            get_window_size(&trows, &cols);
         }
 
-        refresh_screen(key_pressed, cx, cy);
+        refresh_screen(key_pressed, cx, cy, trows, cols);
 
         c = read_key();
         if (c == CTRL_KEY('q'))
@@ -85,7 +86,7 @@ int main(int argc, char *argv[]) /*argc= παιρνει αριθμο απο argu
 
             else if (c == DOWN_ARROW_KEY)
             {
-                if (cy < rows - 1)
+                if (cy < trows - 1)
                     cy++;
             }
 
@@ -100,10 +101,29 @@ int main(int argc, char *argv[]) /*argc= παιρνει αριθμο απο argu
                 if (cx > 0)
                     cx--;
             }
+            else if (c == ENTER_KEY)
+            {
+                int new_row_len = rows[cy].len - cx;
+                ed_insert_row(cy + 1, &rows[cy].chars[cx], new_row_len);
+
+                rows[cy].len = cx;
+                rows[cy].chars[cx] = '\0';
+                cy++;
+                cx = 0;
+            }
+            else if (iscntrl(c))
+                continue;
+            else
+            {
+
+                ed_instert_char(cy, cx, c);
+                cx++;
+            }
         }
     }
     write(STDOUT_FILENO, "\x1b[2J", 4); // Πριν κλεισω το προγραμμα κανω clear και παω στο 0,0
     write(STDOUT_FILENO, "\x1b[H", 3);
+
     return 0;
 }
 
@@ -200,7 +220,7 @@ int read_key()
     return 27;
 }
 
-int get_window_size(int *rows, int *cols)
+int get_window_size(int *trows, int *cols)
 {
     struct winsize ws;
 
@@ -208,18 +228,33 @@ int get_window_size(int *rows, int *cols)
         return -1;
 
     *cols = ws.ws_col;
-    *rows = ws.ws_row;
+    *trows = ws.ws_row;
 
     return 0;
 }
 
-void refresh_screen(int key_pressed, int cx, int cy)
+void refresh_screen(int key_pressed, int cx, int cy, int t_rows, int t_cols)
 {
+    int i;
     write(STDOUT_FILENO, "\x1b[2J", 4); // clear
     write(STDOUT_FILENO, "\x1b[H", 3);  // ξεκιναμε απο το 1,1
-    printf("TEST: %d ('%c') \r\n", key_pressed, key_pressed);
 
-    // μεταφα τα col+1,row+1 σε εναν μικρο πινακα buffer κ μεταφερετε ο κερσορας στο κατακυλο σημειο rows κ cols.
+    for (int i = 0; i < t_rows; i++)
+    {
+        // num_rows ποσες γραμμες εχει ο κωδικας μας , trows το υψος του terminal σε rows
+        if (i < num_rows)
+            printf("%s ", rows[i].chars);
+
+        else
+        {
+            printf("~");
+            fflush(stdout); /*γαμω τον buffer και την c. κανουμε push οτιδηποτε υπηρχε στον buffer πριν παμε στις εντολες write που
+            εκτελουνται απευθειας χωρις την βοηθεια του buffer και του stdio🫠. δεν κανω πριν ~hello world*/
+        }
+        if (i < t_rows - 1)
+            printf("\r\n");
+    }
+    // μεταφα τα col+1,row+1 σε εναν μικρο πινακα buffer κ μεταφερετε ο κερσορας στο κατακυλο σημειο trows κ tcols.
     char buf[32];
     snprintf(buf, sizeof(buf), "\x1b[%d;%dH", cy + 1, cx + 1);
     write(STDOUT_FILENO, buf, strlen(buf));

@@ -26,6 +26,7 @@ void ed_open(const char *filename)
             }
             ed_append_row(line, linelen);
         }
+
         free(line);
         fclose(input_f);
     }
@@ -40,5 +41,32 @@ void ed_append_row(char *line, int len)
     memcpy(rows[num_rows].chars, line, len);             // κανω move το text στο νεο σημειο στην μνημη
     rows[num_rows].chars[len] = '\0';
     rows[num_rows].len = len;
+    num_rows++;
+}
+
+void ed_instert_char(int row_index, int col_index, char c)
+{
+    // θελω να κανω ολισθηση προς τα δεξια για να βαλω εναν νεο χαρακτηρα
+    rows[row_index].chars = realloc(rows[row_index].chars, rows[row_index].len + 2);
+    // θελω μνημη στο memmove για αυτο βαζω &
+    memmove(&rows[row_index].chars[col_index + 1], // εδω θα παει ο νεος χαρακτηρας μετα την ολισθηση
+            &rows[row_index].chars[col_index],
+            rows[row_index].len - col_index + 1); // το col_index δινχει που θελω να βαλω τον νεο χαρακτηρα
+
+    rows[row_index].chars[col_index] = c;
+    rows[row_index].len++;
+}
+
+void ed_insert_row(int index, char *text, int len)
+{
+    rows = realloc(rows, sizeof(erow) * (num_rows + 1));
+
+    memmove(&rows[index + 1], &rows[index], sizeof(erow) * (num_rows - index));
+
+    rows[index].chars = malloc(len + 1);
+    memcpy(rows[index].chars, text, len);
+    rows[index].chars[len] = '\0';
+    rows[index].len = len;
+
     num_rows++;
 }
