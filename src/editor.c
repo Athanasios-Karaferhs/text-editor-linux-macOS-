@@ -70,3 +70,12 @@ void ed_insert_row(int index, char *text, int len)
 
     num_rows++;
 }
+
+void ed_delete_char(int row_index, int col_index)
+{
+    memmove(&rows[row_index].chars[col_index - 1],
+            &rows[row_index].chars[col_index],
+            rows[row_index].len - col_index + 1);
+
+    rows[row_index].len--;
+}

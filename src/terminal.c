@@ -12,6 +12,7 @@
 #define RIGHT_ARROW_KEY 1002
 #define LEFT_ARROW_KEY 1003
 #define ENTER_KEY 13
+#define BACKSPACE 8
 #define CTRL_KEY(k) ((k) & 0x1f) /*κανουμε ενα bitwise and (αχ κυριε δημητριου :>). AND με το q και το 0x1f δινει 17 κ μετα παει κ ελεγχει \
 αντι c == 17 (ctrl+q)*/
 #include <sys/ioctl.h>           //για να μετραμε ποσα trows/col εχει το terminal
@@ -50,6 +51,7 @@ char*/
     int key_pressed = 0;
     int cy = num_rows - 1;
     int cx = rows[cy].len;
+
     enable_raw_mode();
 
     // όταν αλλάζει το μέγεθος του terminal στέλνει SIGWINCH, thanks to that random ahh guy on stackoverflow
@@ -69,8 +71,10 @@ char*/
         }
 
         refresh_screen(key_pressed, cx, cy, trows, cols);
-
         c = read_key();
+        /*μικρος ελεγχος γιατι δεν καταλααινω που υπαρχει το θεμα με το backspace :D
+        printf("key: %d\r\n", c);
+        fflush(stdout);*/
         if (c == CTRL_KEY('q'))
             break;
 
@@ -105,12 +109,38 @@ char*/
             {
                 int new_row_len = rows[cy].len - cx;
                 ed_insert_row(cy + 1, &rows[cy].chars[cx], new_row_len);
-
                 rows[cy].len = cx;
                 rows[cy].chars[cx] = '\0';
                 cy++;
                 cx = 0;
             }
+            else if (c == BACKSPACE)
+            {
+
+                if (cx > 0)
+                {
+                    ed_delete_char(cy, cx);
+                    cx--;
+                }
+                else if (cy > 0)
+                {
+                    int prev_len = rows[cy - 1].len; // capture BEFORE merging
+
+                    int new_len = rows[cy - 1].len + rows[cy].len;
+                    rows[cy - 1].chars = realloc(rows[cy - 1].chars, new_len + 1);
+                    memcpy(&rows[cy - 1].chars[rows[cy - 1].len], rows[cy].chars, rows[cy].len);
+                    rows[cy - 1].len = new_len;
+                    rows[cy - 1].chars[new_len] = '\0';
+
+                    free(rows[cy].chars);
+                    memmove(&rows[cy], &rows[cy + 1], sizeof(erow) * (num_rows - cy - 1));
+                    num_rows--;
+
+                    cy--;
+                    cx = prev_len;
+                }
+            }
+
             else if (iscntrl(c))
                 continue;
             else
