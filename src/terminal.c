@@ -12,7 +12,7 @@
 #define RIGHT_ARROW_KEY 1002
 #define LEFT_ARROW_KEY 1003
 #define ENTER_KEY 13
-#define BACKSPACE 8
+#define BACKSPACE 127
 #define CTRL_KEY(k) ((k) & 0x1f) /*κανουμε ενα bitwise and (αχ κυριε δημητριου :>). AND με το q και το 0x1f δινει 17 κ μετα παει κ ελεγχει \
 αντι c == 17 (ctrl+q)*/
 #include <sys/ioctl.h>           //για να μετραμε ποσα trows/col εχει το terminal
@@ -35,7 +35,6 @@ void handle_sigwinch(int sig)
     (void)sig;
     window_resized = 1;
 }
-
 int main(int argc, char *argv[]) /*argc= παιρνει αριθμο απο arguments π.χ. ./terminal text.txt =2 και βαζει τις εντολες στο argv που ειναι πινακας απο
 char*/
 {
@@ -72,12 +71,10 @@ char*/
 
         refresh_screen(key_pressed, cx, cy, trows, cols);
         c = read_key();
-        /*μικρος ελεγχος γιατι δεν καταλααινω που υπαρχει το θεμα με το backspace :D
-        printf("key: %d\r\n", c);
-        fflush(stdout);*/
+        // printf("patas: %d\r\n", c);
+
         if (c == CTRL_KEY('q'))
             break;
-
         else
         {
             key_pressed = c;
@@ -87,19 +84,16 @@ char*/
                 if (cy > 0)
                     cy--;
             }
-
             else if (c == DOWN_ARROW_KEY)
             {
                 if (cy < trows - 1)
                     cy++;
             }
-
             else if (c == RIGHT_ARROW_KEY)
             {
                 if (cx < cols - 1)
                     cx++;
             }
-
             else if (c == LEFT_ARROW_KEY)
             {
                 if (cx > 0)
@@ -116,7 +110,6 @@ char*/
             }
             else if (c == BACKSPACE)
             {
-
                 if (cx > 0)
                 {
                     ed_delete_char(cy, cx);
@@ -145,12 +138,12 @@ char*/
                 continue;
             else
             {
-
                 ed_instert_char(cy, cx, c);
                 cx++;
             }
         }
     }
+
     write(STDOUT_FILENO, "\x1b[2J", 4); // Πριν κλεισω το προγραμμα κανω clear και παω στο 0,0
     write(STDOUT_FILENO, "\x1b[H", 3);
 
