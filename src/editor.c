@@ -4,10 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+char status_msg[64] = "";
 erow *rows = NULL;
 int num_rows = 0;
 
-void ed_open(const char *filename)
+int ed_open(const char *filename)
 {
 
     FILE *input_f;
@@ -29,9 +30,14 @@ void ed_open(const char *filename)
 
         free(line);
         fclose(input_f);
+
+        return 1;
     }
     else
+    {
         perror("Can not open the file.");
+        return 0;
+    }
 }
 
 void ed_append_row(char *line, int len)
@@ -78,4 +84,20 @@ void ed_delete_char(int row_index, int col_index)
             rows[row_index].len - col_index + 1);
 
     rows[row_index].len--;
+}
+
+void ed_save(const char *filename)
+{
+    FILE *output_f;
+    output_f = fopen(filename, "w"); // w for writing
+
+    if (output_f != NULL)
+    {
+        for (int i = 0; i < num_rows; i++)
+            fprintf(output_f, "%s\n", rows[i].chars);
+        snprintf(status_msg, sizeof(status_msg), "Saved!");
+        fclose(output_f);
+    }
+    else
+        perror("Can not save the file.");
 }

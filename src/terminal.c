@@ -44,13 +44,14 @@ char*/
         exit(EXIT_FAILURE);
     }
     ed_open(argv[1]);
+    if (num_rows == 0)
+        ed_append_row("", 0);
 
     int trows, cols;
     int c;
     int key_pressed = 0;
     int cy = num_rows - 1;
     int cx = rows[cy].len;
-
     enable_raw_mode();
 
     // όταν αλλάζει το μέγεθος του terminal στέλνει SIGWINCH, thanks to that random ahh guy on stackoverflow
@@ -86,12 +87,12 @@ char*/
             }
             else if (c == DOWN_ARROW_KEY)
             {
-                if (cy < trows - 1)
+                if (cy < num_rows - 1)
                     cy++;
             }
             else if (c == RIGHT_ARROW_KEY)
             {
-                if (cx < cols - 1)
+                if (cx < cols - 1 && cx < rows[cy].len)
                     cx++;
             }
             else if (c == LEFT_ARROW_KEY)
@@ -133,7 +134,8 @@ char*/
                     cx = prev_len;
                 }
             }
-
+            else if (c == CTRL_KEY('s'))
+                ed_save(argv[1]);
             else if (iscntrl(c))
                 continue;
             else
@@ -277,6 +279,9 @@ void refresh_screen(int key_pressed, int cx, int cy, int t_rows, int t_cols)
         if (i < t_rows - 1)
             printf("\r\n");
     }
+
+    printf("%s", status_msg);
+    fflush(stdout);
     // μεταφα τα col+1,row+1 σε εναν μικρο πινακα buffer κ μεταφερετε ο κερσορας στο κατακυλο σημειο trows κ tcols.
     char buf[32];
     snprintf(buf, sizeof(buf), "\x1b[%d;%dH", cy + 1, cx + 1);
