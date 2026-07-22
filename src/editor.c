@@ -7,6 +7,8 @@
 char status_msg[64] = "";
 erow *rows = NULL;
 int num_rows = 0;
+action *undo_stack = NULL;
+int undo_count = 0;
 
 int ed_open(const char *filename)
 {
@@ -39,7 +41,7 @@ int ed_open(const char *filename)
         return 0;
     }
 }
-
+// βαζω στο τελος τις γραμμης
 void ed_append_row(char *line, int len)
 {
     rows = realloc(rows, sizeof(erow) * (num_rows + 1)); // δωσε ενα παραπανω slot
@@ -49,7 +51,7 @@ void ed_append_row(char *line, int len)
     rows[num_rows].len = len;
     num_rows++;
 }
-
+// instert ενδιαμεσα εναν χαρακτηρα
 void ed_instert_char(int row_index, int col_index, char c)
 {
     // θελω να κανω ολισθηση προς τα δεξια για να βαλω εναν νεο χαρακτηρα
@@ -62,7 +64,7 @@ void ed_instert_char(int row_index, int col_index, char c)
     rows[row_index].chars[col_index] = c;
     rows[row_index].len++;
 }
-
+// οταν παταω πχ εντερ βαζουμε μια νεα γραμμη στο struct
 void ed_insert_row(int index, char *text, int len)
 {
     rows = realloc(rows, sizeof(erow) * (num_rows + 1));
@@ -100,4 +102,15 @@ void ed_save(const char *filename)
     }
     else
         perror("Can not save the file.");
+}
+
+void ed_push_undo(int row, int col, char c)
+{
+
+    //+1 κομματι μνημης για το undo, πανω στον πινακα μας κ δεν χρειαζεται μαλλον(δεν εχουμε Pointer)
+    undo_stack = realloc(undo_stack, sizeof(action) * (undo_count + 1));
+    undo_stack[undo_count].row = row;
+    undo_stack[undo_count].col = col;
+    undo_stack[undo_count].c = c;
+    undo_count++;
 }

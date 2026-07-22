@@ -18,11 +18,11 @@
 #include <sys/ioctl.h>           //για να μετραμε ποσα trows/col εχει το terminal
 #include <errno.h>               //resize
 #include "editor.h"
-
+char save_msg[64] = "";
 void enable_raw_mode(void);
 int read_key(void); // gt to read_key einai xamhla
 int get_window_size(int *, int *);
-void refresh_screen(int, int, int, int, int);
+void refresh_screen(int, int, int, int, int, int);
 void handle_sigwinch(int);
 
 // Global variable to store original settings so atexit can access it
@@ -63,6 +63,8 @@ char*/
 
     while (1)
     {
+        sprintf(save_msg, "CTRL+q for exit");
+
         // το ioctl τρέχει μόνο όταν αλλάξει το terminal
         if (window_resized)
         {
@@ -70,7 +72,7 @@ char*/
             get_window_size(&trows, &cols);
         }
 
-        refresh_screen(key_pressed, cx, cy, trows, cols);
+        refresh_screen(key_pressed, cx, cy, trows, cols, c);
         c = read_key();
         // printf("patas: %d\r\n", c);
 
@@ -83,7 +85,10 @@ char*/
             if (c == UPPER_ARROW_KEY)
             {
                 if (cy > 0)
+                {
                     cy--;
+                    cx = rows[cy].len;
+                }
             }
             else if (c == DOWN_ARROW_KEY)
             {
@@ -136,10 +141,22 @@ char*/
             }
             else if (c == CTRL_KEY('s'))
                 ed_save(argv[1]);
+            else if (c == CTRL_KEY('z'))
+            {
+                if (undo_count > 0)
+                {
+                    action last = undo_stack[undo_count - 1];
+                    ed_delete_char(last.row, last.col + 1);
+                    cy = last.row;
+                    cx = last.col;
+                    undo_count--;
+                }
+            }
             else if (iscntrl(c))
                 continue;
             else
             {
+                ed_push_undo(cy, cx, c);
                 ed_instert_char(cy, cx, c);
                 cx++;
             }
@@ -258,7 +275,7 @@ int get_window_size(int *trows, int *cols)
     return 0;
 }
 
-void refresh_screen(int key_pressed, int cx, int cy, int t_rows, int t_cols)
+void refresh_screen(int key_pressed, int cx, int cy, int t_rows, int t_cols, int c)
 {
     int i;
     write(STDOUT_FILENO, "\x1b[2J", 4); // clear
@@ -280,7 +297,10 @@ void refresh_screen(int key_pressed, int cx, int cy, int t_rows, int t_cols)
             printf("\r\n");
     }
 
-    printf("%s", status_msg);
+    if (c != CTRL_KEY('s'))
+        printf("%s", save_msg);
+    else
+        printf("%s", status_msg);
     fflush(stdout);
     // μεταφα τα col+1,row+1 σε εναν μικρο πινακα buffer κ μεταφερετε ο κερσορας στο κατακυλο σημειο trows κ tcols.
     char buf[32];
