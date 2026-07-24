@@ -9,7 +9,7 @@ erow *rows = NULL;
 int num_rows = 0;
 action *undo_stack = NULL;
 int undo_count = 0;
-
+char status_line[64] = "CTRL+Q to quit, CTRL+S to save";
 int ed_open(const char *filename)
 {
 
@@ -97,7 +97,7 @@ void ed_save(const char *filename)
     {
         for (int i = 0; i < num_rows; i++)
             fprintf(output_f, "%s\n", rows[i].chars);
-        snprintf(status_msg, sizeof(status_msg), "Saved!");
+        snprintf(status_line, sizeof(status_line), "saved!");
         fclose(output_f);
     }
     else

@@ -20,8 +20,7 @@ typedef struct
 extern action *undo_stack;
 extern int undo_count;
 
-extern char status_msg[64];
-extern char save_smsg[64];
+extern char status_line[64];
 
 int ed_open(const char *filename);
 void ed_append_row(char *line, int len);

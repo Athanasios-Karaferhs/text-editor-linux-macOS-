@@ -18,12 +18,12 @@
 #include <sys/ioctl.h>           //για να μετραμε ποσα trows/col εχει το terminal
 #include <errno.h>               //resize
 #include "editor.h"
-char save_msg[64] = "";
 void enable_raw_mode(void);
 int read_key(void); // gt to read_key einai xamhla
 int get_window_size(int *, int *);
 void refresh_screen(int, int, int, int, int, int);
 void handle_sigwinch(int);
+void save_checker(int);
 
 // Global variable to store original settings so atexit can access it
 struct termios orig_termios;
@@ -47,13 +47,14 @@ char*/
     if (num_rows == 0)
         ed_append_row("", 0);
 
+    int saved = 0;
     int trows, cols;
     int c;
     int key_pressed = 0;
     int cy = num_rows - 1;
     int cx = rows[cy].len;
     enable_raw_mode();
-
+    int count = 0;
     // όταν αλλάζει το μέγεθος του terminal στέλνει SIGWINCH, thanks to that random ahh guy on stackoverflow
     struct sigaction sa;
     sa.sa_handler = handle_sigwinch;
@@ -62,10 +63,7 @@ char*/
     sigaction(SIGWINCH, &sa, NULL);
 
     while (1)
-    {
-        sprintf(save_msg, "CTRL+q for exit");
-
-        // το ioctl τρέχει μόνο όταν αλλάξει το terminal
+    { // το ioctl τρέχει μόνο όταν αλλάξει το terminal
         if (window_resized)
         {
             window_resized = 0;
@@ -77,7 +75,18 @@ char*/
         // printf("patas: %d\r\n", c);
 
         if (c == CTRL_KEY('q'))
-            break;
+        {
+            count += 1;
+            if (saved == 0 && count == 1)
+            {
+                snprintf(status_line, sizeof(status_line), "Unsaved changes! Press CTRL+Q again to quit:)");
+                key_pressed = c;
+                count += 1;
+                continue;
+            }
+            else
+                break;
+        }
         else
         {
             key_pressed = c;
@@ -118,6 +127,7 @@ char*/
             {
                 if (cx > 0)
                 {
+
                     ed_delete_char(cy, cx);
                     cx--;
                 }
@@ -140,7 +150,10 @@ char*/
                 }
             }
             else if (c == CTRL_KEY('s'))
+            {
+                saved = 1;
                 ed_save(argv[1]);
+            }
             else if (c == CTRL_KEY('z'))
             {
                 if (undo_count > 0)
@@ -297,10 +310,7 @@ void refresh_screen(int key_pressed, int cx, int cy, int t_rows, int t_cols, int
             printf("\r\n");
     }
 
-    if (c != CTRL_KEY('s'))
-        printf("%s", save_msg);
-    else
-        printf("%s", status_msg);
+    printf("%s", status_line);
     fflush(stdout);
     // μεταφα τα col+1,row+1 σε εναν μικρο πινακα buffer κ μεταφερετε ο κερσορας στο κατακυλο σημειο trows κ tcols.
     char buf[32];
