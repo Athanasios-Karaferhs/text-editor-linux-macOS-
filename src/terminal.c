@@ -290,7 +290,6 @@ int get_window_size(int *trows, int *cols)
 
 void refresh_screen(int key_pressed, int cx, int cy, int t_rows, int t_cols, int c)
 {
-    int i;
     write(STDOUT_FILENO, "\x1b[2J", 4); // clear
     write(STDOUT_FILENO, "\x1b[H", 3);  // ξεκιναμε απο το 1,1
 

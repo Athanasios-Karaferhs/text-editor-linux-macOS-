@@ -10,6 +10,7 @@ int num_rows = 0;
 action *undo_stack = NULL;
 int undo_count = 0;
 char status_line[64] = "CTRL+Q to quit, CTRL+S to save";
+
 int ed_open(const char *filename)
 {
 
@@ -79,13 +80,26 @@ void ed_insert_row(int index, char *text, int len)
     num_rows++;
 }
 
+// deletes the char at col_index
+void ed_delete_char_at(int row_index, int col_index)
+{
+    if (row_index < 0 || row_index >= num_rows)
+        return;
+    if (col_index < 0 || col_index >= rows[row_index].len)
+        return;
+
+    memmove(&rows[row_index].chars[col_index],
+            &rows[row_index].chars[col_index + 1],
+            rows[row_index].len - col_index); // includes the '\0'
+    rows[row_index].len--;
+}
+
+// backspace: deletes the char before col index
 void ed_delete_char(int row_index, int col_index)
 {
-    memmove(&rows[row_index].chars[col_index - 1],
-            &rows[row_index].chars[col_index],
-            rows[row_index].len - col_index + 1);
-
-    rows[row_index].len--;
+    if (col_index <= 0)
+        return; // protects against chars[-1]
+    ed_delete_char_at(row_index, col_index - 1);
 }
 
 void ed_save(const char *filename)
@@ -103,14 +117,25 @@ void ed_save(const char *filename)
     else
         perror("Can not save the file.");
 }
-
 void ed_push_undo(int row, int col, char c)
 {
-
-    //+1 κομματι μνημης για το undo, πανω στον πινακα μας κ δεν χρειαζεται μαλλον(δεν εχουμε Pointer)
     undo_stack = realloc(undo_stack, sizeof(action) * (undo_count + 1));
     undo_stack[undo_count].row = row;
     undo_stack[undo_count].col = col;
     undo_stack[undo_count].c = c;
     undo_count++;
+}
+int ed_undo(int *cy, int *cx)
+{
+    if (undo_count == 0)
+        return 0;
+
+    undo_count--; // pop
+    action a = undo_stack[undo_count];
+
+    ed_delete_char_at(a.row, a.col); // col = where the char was inserted
+
+    *cy = a.row; // put the cursor back
+    *cx = a.col;
+    return 1;
 }

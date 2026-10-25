@@ -1,21 +1,27 @@
-terminal-based text editor built from scratch in C, implementing raw mode terminal handling, a custom text buffer, and file I/O.
+# C Terminal Text Editor
 
-FEATURES:
-Open and edit text files
-Insert/delete characters, split/merge lines (Enter/Backspace for now)
-Save changes back to disk
-Arrow-key navigation with proper bounds checking
-Live terminal resize handling
+A lightweight, terminal-based text editor built from scratch in C. This project implements low-level POSIX terminal handling to switch to raw mode, uses a custom dynamic buffer structure for fast text editing, and includes robust file I/O for reading and writing files.
 
-BUILD:
+---
+
+## Features
+
+- **File I/O**: Open existing text files from the command line and save edits back to disk.
+- **Text Editing**: Full character insertion/deletion, along with line splitting (`Enter`) and merging (`Backspace`).
+- **Cursor Navigation**: Seamless movement using standard arrow keys, complete with edge and bound checking.
+- **Dynamic Terminal Resizing**: Handles live `SIGWINCH` signal changes to re-render the editor on terminal resize.
+- **Raw Mode Terminal Control**: Disables canonical mode and echo using `termios` to process keypresses byte-by-byte.
+
+---
+
+## Requirements & Building
+
+A C compiler (such as `gcc` or `clang`) and a POSIX-compliant environment (Linux, macOS, or WSL on Windows) are required.
+
+### Build
+
+Compile the source files using `gcc`:
+
+```bash
 gcc terminal.c editor.c -o terminal
-RUN:
-./terminal <filename>
-
-CONTROLS:
-Arrow keys — move cursor
-Enter — new line
-Backspace — delete character / merge lines
-Ctrl-S — save
-Ctrl-Q — quit
-
+```
