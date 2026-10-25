@@ -23,5 +23,5 @@ A C compiler (such as `gcc` or `clang`) and a POSIX-compliant environment (Linux
 Compile the source files using `gcc`:
 
 ```bash
-gcc terminal.c editor.c -o terminal
+gcc terminal.c editor.c -o terminal -lncurses
 ```
